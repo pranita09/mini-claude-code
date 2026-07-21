@@ -1,7 +1,7 @@
 {
   "name": "mini-claude-code",
   "version": "1.0.0",
-  "description": "A Node.js project",
+  "description": "A simplified version of Claude Code",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -10,5 +10,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "module",
+  "dependencies": {
+    "openai": "^6.48.0"
+  }
 }
