@@ -40,7 +40,29 @@ const READ_TOOL = {
     },
 }
 
-const TOOLS = [READ_TOOL];
+const WRITE_TOOL = {
+    type: 'function',
+    function: {
+        name: 'Write',
+        description: 'Write and return the contents of the file',
+        parameters: {
+            type: 'object',
+            required: ['file_path', 'contents'],
+            properties: {
+                file_path: {
+                    type: 'string',
+                    description: 'The name of the file to write'
+                },
+                contents: {
+                    type: 'string',
+                    description: 'The contents to write to the file'
+                }
+            }
+        }
+    }
+}
+
+const TOOLS = [READ_TOOL, WRITE_TOOL];
 
 async function getModelResponse(messages) {
     return client.chat.completions.create({
@@ -55,6 +77,10 @@ async function executeTool(toolCall) {
         const { file_path } = JSON.parse(toolCall.function.arguments);
         const content = await fs.promises.readFile(file_path, 'utf8');
         return content;
+    } else if(toolCall?.function?.name === WRITE_TOOL.function.name) {
+        const { file_path, contents } = JSON.parse(toolCall.function.arguments);
+        await fs.promises.writeFile(file_path, contents);
+        return `File ${file_path} written successfully`;
     }
 
     return "";
