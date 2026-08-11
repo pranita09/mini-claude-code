@@ -66,53 +66,70 @@ async function init() {
     output: process.stdout,
   });
 
+  console.log("\x1b[36m🤖 AI Agent \x1b[0m (Type 'exit', 'quit', or 'q' to exit.)\n");
+
   const messages = [];
 
-  const prompt = await rl.question("Enter your query: ");
+  while(true) {
+    // >
+    const prompt = await rl.question("\x1b[32m> \x1b[0m");
 
-  if(!prompt?.trim()?.length) {
-    console.log("Please enter valid query");
-    rl.close();
-    return;
-  }
+    if(!prompt.trim().length) {
+      continue;
+    } else if (['exit', 'quit', 'q'].includes(prompt.trim().toLowerCase())) {
+        console.log("\x1b[31mExiting...\x1b[0m");
+        rl.close();
+        break;
+    }
 
-  messages.push({
-    role: "user",
-    content: prompt,
-  });
-
-  const response = await getModelResponse(messages);
-  const { choices } = response;
-
-  if(!choices || choices.length === 0) {
-    console.log("No response from model");
-    rl.close();
-    return;
-  }
-
-  const { message } = choices[0];
-  const { content, tool_calls } = message;
-
-  if(!tool_calls?.length) {
-    console.log("Model Response: ", content);
-  }
-
-  messages.push(message);
-
-  for(const toolCall of tool_calls) {
-    const toolResponse = await executeTool(toolCall);
     messages.push({
-      role: "tool",
-      tool_call_id: toolCall.id,
-      content: toolResponse,
+      role: "user",
+      content: prompt,
     });
+
+    await getResponse();
   }
 
-  const finalResponse = await getModelResponse(messages);
+  async function getResponse() {
+    const response = await getModelResponse(messages);
+    const { choices } = response;
 
-  console.log('Messages: ', finalResponse.choices[0].message.content);
+    if(!choices || choices.length === 0) {
+      console.log("No response from model");
+      return;
+    }
 
-  rl.close();
+    const { message } = choices[0];
+    const { content, tool_calls } = message;
+
+    // assistant's response
+    messages.push(message);
+
+    if(tool_calls?.length) {
+      // [{ read_tool }, { ... }]
+
+      /**
+      * user prompt
+      * assistant's response (with tool calls)
+      * tool result
+      * assistant's response (final)
+      * user response
+      */
+
+      for(const toolCall of tool_calls) {
+        const toolResponse = await executeTool(toolCall);
+        messages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: toolResponse,
+        });
+      }
+  
+      await getResponse();
+    } else {
+        console.log(content);
+    }
+  }
 }
 
 init();
