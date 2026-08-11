@@ -4,6 +4,7 @@
 
 import OpenAI from "openai";
 import readline from "readline/promises";
+import fs from "fs";
 
 process.loadEnvFile('.env');
 
@@ -49,6 +50,16 @@ async function getModelResponse(messages) {
     });
 }
 
+async function executeTool(toolCall) {
+    if(toolCall?.function?.name === READ_TOOL.function.name) {
+        const { file_path } = JSON.parse(toolCall.function.arguments);
+        const content = await fs.promises.readFile(file_path, 'utf8');
+        return content;
+    }
+
+    return "";
+}
+
 async function init() {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -71,7 +82,35 @@ async function init() {
   });
 
   const response = await getModelResponse(messages);
-  console.log("Model Response: ", response.choices[0].message.content);
+  const { choices } = response;
+
+  if(!choices || choices.length === 0) {
+    console.log("No response from model");
+    rl.close();
+    return;
+  }
+
+  const { message } = choices[0];
+  const { content, tool_calls } = message;
+
+  if(!tool_calls?.length) {
+    console.log("Model Response: ", content);
+  }
+
+  messages.push(message);
+
+  for(const toolCall of tool_calls) {
+    const toolResponse = await executeTool(toolCall);
+    messages.push({
+      role: "tool",
+      tool_call_id: toolCall.id,
+      content: toolResponse,
+    });
+  }
+
+  const finalResponse = await getModelResponse(messages);
+
+  console.log('Messages: ', finalResponse.choices[0].message.content);
 
   rl.close();
 }
