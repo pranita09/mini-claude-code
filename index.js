@@ -6,6 +6,9 @@ import OpenAI from "openai";
 import readline from "readline/promises";
 import fs from "fs";
 
+import { TOOLS, READ_TOOL, WRITE_TOOL } from "./tools.js";
+import { withSpinner } from "./utils.js";
+
 process.loadEnvFile('.env');
 
 const BASE_URL = "https://openrouter.ai/api/v1";
@@ -16,53 +19,6 @@ const client = new OpenAI({
   apiKey: API_KEY,
   baseURL: BASE_URL,
 });
-
-/**
- * function read({ file_path }) {
- *   it will read and return the contents of the file at the given path
- * }
- */
-const READ_TOOL = {
-    type: 'function',
-    function: {
-        name: 'Read',
-        description: 'Read a file and return its contents',
-        parameters: {
-            type: 'object',
-            required: ['file_path'],
-            properties: {
-                file_path: { 
-                    type: 'string', 
-                    description: 'The file path to read' 
-                }
-            }
-        }
-    },
-}
-
-const WRITE_TOOL = {
-    type: 'function',
-    function: {
-        name: 'Write',
-        description: 'Write and return the contents of the file',
-        parameters: {
-            type: 'object',
-            required: ['file_path', 'contents'],
-            properties: {
-                file_path: {
-                    type: 'string',
-                    description: 'The name of the file to write'
-                },
-                contents: {
-                    type: 'string',
-                    description: 'The contents to write to the file'
-                }
-            }
-        }
-    }
-}
-
-const TOOLS = [READ_TOOL, WRITE_TOOL];
 
 async function getModelResponse(messages) {
     return client.chat.completions.create({
@@ -117,7 +73,7 @@ async function init() {
   }
 
   async function getResponse() {
-    const response = await getModelResponse(messages);
+    const response = await withSpinner(null, () => getModelResponse(messages));
     const { choices } = response;
 
     if(!choices || choices.length === 0) {
@@ -143,7 +99,16 @@ async function init() {
       */
 
       for(const toolCall of tool_calls) {
-        const toolResponse = await executeTool(toolCall);
+        let toolResponse = "";
+        const { name } = toolCall.function;
+
+        try {
+            toolResponse = await withSpinner(null, () => executeTool(toolCall));
+        } catch (error) {
+            toolResponse = `Error: ${error.message}`;
+            process.stderr.write(`\x1b[31m Tool (${name}) failed: ${toolResponse}\x1b[0m\n`);
+        }
+        
         messages.push({
           role: "tool",
           tool_call_id: toolCall.id,
