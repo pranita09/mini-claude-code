@@ -49,3 +49,15 @@ export async function withSpinner(label, fn) {
         spinner.stop();
     }
 }
+
+export function formatToolDescription(toolFunction) {
+    const args = JSON.parse(toolFunction.arguments);
+    const argsStr = Object.entries(args)
+      .map(
+        ([key, value]) =>
+          `  ${key}: ${typeof value === "string" && value.length > 200 ? value.slice(0, 200) + "..." : value}`,
+      )
+      .join("\n");
+  
+    return `${toolFunction.name}\n${argsStr}`;
+  }

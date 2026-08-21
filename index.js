@@ -7,7 +7,7 @@ import readline from "readline/promises";
 import fs from "fs";
 
 import { TOOLS, READ_TOOL, WRITE_TOOL } from "./tools.js";
-import { withSpinner } from "./utils.js";
+import { withSpinner, formatToolDescription } from "./utils.js";
 
 process.loadEnvFile('.env');
 
@@ -40,6 +40,12 @@ async function executeTool(toolCall) {
     }
 
     return "";
+}
+
+async function promptUserPermission(rl, toolFunction) {
+    const description = formatToolDescription(toolFunction);
+    const answer = await rl.question(`\n🔧 Tool call: ${description}\n\nAllow? (y/n): `);
+    return answer.toLowerCase().trim() === 'y';
 }
 
 async function init() {
@@ -101,6 +107,16 @@ async function init() {
       for(const toolCall of tool_calls) {
         let toolResponse = "";
         const { name } = toolCall.function;
+        const permitted = await promptUserPermission(rl, toolCall.function);
+
+        if(!permitted) {
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: `User denied permission for the tool: ${name}`,
+            });
+            continue;
+        }
 
         try {
             toolResponse = await withSpinner(null, () => executeTool(toolCall));
