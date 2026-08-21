@@ -43,4 +43,51 @@ export const WRITE_TOOL = {
     }
 }
 
-export const TOOLS = [READ_TOOL, WRITE_TOOL];
+export const EDIT_TOOL = {
+    type: "function",
+    function: {
+      name: "Edit",
+      description:
+        "Make a targeted edit to an existing file by replacing a specific string with new content. Use this instead of Write when modifying existing files.",
+      parameters: {
+        type: "object",
+        required: ["file_path", "old_string", "new_string"],
+        properties: {
+          file_path: {
+            type: "string",
+            description: "The path of the file to edit",
+          },
+          old_string: {
+            type: "string",
+            description:
+              "The exact string to find and replace. Must match exactly, including whitespace.",
+          },
+          new_string: {
+            type: "string",
+            description: "The replacement string",
+          },
+        },
+      },
+    },
+  };
+  
+  export const BASH_TOOL = {
+    type: "function",
+    function: {
+      name: "Bash",
+      description:
+        "Execute a bash command and return its output. Use this to run shell commands like ls, grep, find, cat, npm, git, etc.",
+      parameters: {
+        type: "object",
+        required: ["command"],
+        properties: {
+          command: {
+            type: "string",
+            description: "The bash command to execute",
+          },
+        },
+      },
+    },
+  };
+  
+  export const TOOLS = [READ_TOOL, WRITE_TOOL, EDIT_TOOL, BASH_TOOL];

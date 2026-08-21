@@ -5,9 +5,13 @@
 import OpenAI from "openai";
 import readline from "readline/promises";
 import fs from "fs";
+import { exec } from "child_process";
+import { promisify } from "util";
 
-import { TOOLS, READ_TOOL, WRITE_TOOL } from "./tools.js";
-import { withSpinner, formatToolDescription } from "./utils.js";
+const execAsync = promisify(exec);
+
+import { TOOLS, READ_TOOL, WRITE_TOOL, EDIT_TOOL, BASH_TOOL } from "./tools.js";
+import { withSpinner, formatToolDescription, print } from "./utils.js";
 
 process.loadEnvFile('.env');
 
@@ -37,6 +41,23 @@ async function executeTool(toolCall) {
         const { file_path, contents } = JSON.parse(toolCall.function.arguments);
         await fs.promises.writeFile(file_path, contents);
         return `File ${file_path} written successfully`;
+    } else if (toolCall?.function?.name === EDIT_TOOL.function.name) {
+        const { file_path, old_string, new_string } = JSON.parse(toolCall.function.arguments);
+        const content = await fs.promises.readFile(file_path, 'utf8');
+        const updatedContent = content.replace(old_string, new_string);
+        await fs.promises.writeFile(file_path, updatedContent);
+        return `File ${file_path} edited successfully`;
+    } else if (toolCall?.function?.name === BASH_TOOL.function.name) {
+        const { command } = JSON.parse(toolCall.function.arguments);
+        try {
+            const { stdout, stderr } = await execAsync(command, {
+                encoding: 'utf8',
+                timeout: 30000
+            });
+            return stderr ? `${stdout}\n${stderr}` : stdout;
+        } catch (error) {
+            return `Error: ${error.stderr || error.message}`;
+        }
     }
 
     return "";
@@ -65,7 +86,7 @@ async function init() {
     if(!prompt.trim().length) {
       continue;
     } else if (['exit', 'quit', 'q'].includes(prompt.trim().toLowerCase())) {
-        console.log("\x1b[31mExiting...\x1b[0m");
+        console.log("Goodbye!");
         rl.close();
         break;
     }
@@ -134,7 +155,7 @@ async function init() {
   
       await getResponse();
     } else {
-        console.log(content);
+        print(content);
     }
   }
 }

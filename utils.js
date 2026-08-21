@@ -1,3 +1,8 @@
+import { marked } from "marked";
+import TerminalRenderer from "marked-terminal";
+import { highlight } from "cli-highlight";
+import chalk from "chalk";
+
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const THINKING_WORDS = [
   "Thinking",
@@ -60,4 +65,80 @@ export function formatToolDescription(toolFunction) {
       .join("\n");
   
     return `${toolFunction.name}\n${argsStr}`;
-  }
+}
+
+marked.setOptions({
+    renderer: new TerminalRenderer({
+      // Code blocks with syntax highlighting
+      code: (code, lang) => {
+        try {
+          return (
+            "\n" +
+            chalk.gray("  ┌─") +
+            (lang ? chalk.gray(` ${lang} `) : "") +
+            chalk.gray("─".repeat(40)) +
+            "\n" +
+            highlight(code, { language: lang || "text" })
+              .split("\n")
+              .map((line) => chalk.gray("  │ ") + line)
+              .join("\n") +
+            "\n" +
+            chalk.gray("  └" + "─".repeat(44)) +
+            "\n"
+          );
+        } catch {
+          return "\n" + code + "\n";
+        }
+      },
+      // Inline code
+      codespan: (text) => chalk.bgGray.white(` ${text} `),
+      // Headings
+      firstHeading: (text) =>
+        "\n" + chalk.bold.hex("#a78bfa")("  ✦ " + text) + "\n",
+      heading: (text) => "\n" + chalk.bold.hex("#60a5fa")("  ◆ " + text) + "\n",
+      // Lists
+      listitem: (text) => "  " + chalk.hex("#38bdf8")("→") + " " + text,
+      // Horizontal rule
+      hr: () => "\n" + chalk.gray("  " + "─".repeat(50)) + "\n",
+      // Links
+      link: (href, title, text) =>
+        chalk.cyan.underline(text) + chalk.gray(` (${href})`),
+      // Bold and emphasis
+      strong: (text) => chalk.bold.white(text),
+      em: (text) => chalk.italic.hex("#c084fc")(text),
+      // Tables
+      tableOptions: {
+        chars: {
+          top: "─",
+          "top-mid": "┬",
+          "top-left": "┌",
+          "top-right": "┐",
+          bottom: "─",
+          "bottom-mid": "┴",
+          "bottom-left": "└",
+          "bottom-right": "┘",
+          left: "│",
+          "left-mid": "├",
+          mid: "─",
+          "mid-mid": "┼",
+          right: "│",
+          "right-mid": "┤",
+          middle: "│",
+        },
+      },
+      // Paragraphs
+      reflowText: true,
+      width: 80,
+      // Blockquote
+      blockquote: (text) =>
+        text
+          .split("\n")
+          .map((line) => chalk.gray("  ▌ ") + chalk.italic(line))
+          .join("\n"),
+    }),
+});
+  
+export function print(text) {
+    process.stdout.write(marked(text));
+}
+
