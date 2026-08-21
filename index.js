@@ -75,7 +75,7 @@ async function init() {
     output: process.stdout,
   });
 
-  console.log("\x1b[36m🤖 AI Agent \x1b[0m (Type 'exit', 'quit', or 'q' to exit.)\n");
+  console.log("\x1b[36m🤖 AI Agent \x1b[0m (Type 'exit', or 'quit' to exit.)\n");
 
   const messages = [];
 
@@ -85,7 +85,7 @@ async function init() {
 
     if(!prompt.trim().length) {
       continue;
-    } else if (['exit', 'quit', 'q'].includes(prompt.trim().toLowerCase())) {
+    } else if (['exit', 'quit'].includes(prompt.trim().toLowerCase())) {
         console.log("Goodbye!");
         rl.close();
         break;
