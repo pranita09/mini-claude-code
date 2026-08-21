@@ -1,4 +1,4 @@
-# 🤖 Build Your Own Claude Code
+# 🤖 Mini Claude Code
 
 A simplified, from-scratch implementation of an AI coding agent — inspired by [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview). Built with Node.js, the OpenAI SDK, and a tool-use loop that lets an LLM read, write, edit files, and execute shell commands on the machine.
 
